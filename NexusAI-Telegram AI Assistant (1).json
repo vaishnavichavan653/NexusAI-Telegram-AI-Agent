@@ -1,0 +1,552 @@
+{
+  "name": "NexusAI-Telegram AI Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "a3293134-93ab-4fba-9a5b-2a1f1035e5d8",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      
+      "credentials": {
+        "telegramApi": {
+          "id": "QuN9SMFpOokUHNXN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "66f2854f-6291-4b51-aa7c-f0cdfd823432",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "b5c33aa6-3e42-4f04-a377-8c1e01077738",
+              "name": "text",
+              "value": "={{ $json.message.text || $json.message.caption || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f398169c-aff8-4dd2-b154-6b73907fa777",
+              "name": "messageType",
+              "value": "={{ $json.message.document ? 'document' : ($json.message.text ? 'text' : 'other') }}",
+              "type": "string"
+            },
+            {
+              "id": "426103f4-020f-4266-9a0c-dceb627a4714",
+              "name": "fileId",
+              "value": "={{ $json.message.document.file_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d289e49e-abdd-4dab-97fc-5feaa6bbd8d7",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7d1012b9-4e62-422e-8e43-faf5cbb894e2"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "50c0aed5-557b-4b51-bb52-a16ac1896804",
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "document",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "9b5914e1-e5b9-4b34-91a6-8ff512fc7964",
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "other",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8b0facdd-120e-47c1-b9a6-1dfa181b2b57",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text || $('Telegram Trigger').item.json.message.caption || 'A PDF file was received. Ask the user what question they want answered about it.' }}",
+        "options": {
+          "systemMessage": "You are a helpful assistantYou are NexusAI, a helpful AI study assistant.\n\n1. Help students with Python, Java, programming, science, and college studies.\n2. Explain difficult concepts in simple language.\n3. Reply in Marathi when the user writes in Marathi.\n4. Reply in English when the user writes in English.\n5. Give clear examples and step-by-step instructions.\n6. Be friendly, helpful, and accurate.\n7. If you are unsure about something, say so honestly."
+        }
+      },
+      "id": "d0911ff8-fcc9-4afb-851c-507ac526403e",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1728,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "bbe352a5-8ae9-4885-81e2-6fb9edbe7346",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        208
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Xo0DrhNZbqZIEcch",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "id": "2e123ee6-d4a4-4f90-81b3-a680b313e1c4",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        688,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output.replace(/&/g, \"&amp;\").replace(/</g, \"&lt;\").replace(/>/g, \"&gt;\").replace(/\\*\\*(.+?)\\*\\*/g, \"<b>$1</b>\").replace(/^#{1,6}\\s*(.+)$/gm, \"<b>$1</b>\").replace(/^\\s*[*-]\\s+/gm, \"• \") }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "0eb98953-abcf-43b9-9166-aed11528b11f",
+      "name": "Send a text message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2112,
+        0
+      ],
+      
+      "credentials": {
+        "telegramApi": {
+          "id": "QuN9SMFpOokUHNXN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.fileId }}",
+        "additionalFields": {}
+      },
+      "id": "9c9d0538-b23c-4f7c-8331-f018d865d793",
+      "name": "Get a file",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        0
+      ],
+      
+      "credentials": {
+        "telegramApi": {
+          "id": "QuN9SMFpOokUHNXN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "ee212d1f-56d5-4f08-abb5-5bac3c444818",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Question: {{ $('Edit Fields').item.json.text || 'Summarize this PDF in simple language.' }}\n\nPDF content:\n{{ $json.text }}",
+        "options": {
+          "systemMessage": "You are Nexus AI, a helpful PDF study assistant.\nAnswer using the provided PDF text.\nExplain difficult topics in simple Marathi when the user writes in Marathi.\nIf the answer is not available in the PDF, clearly say so.\nDo not invent information that is not present in the PDF."
+        }
+      },
+      "id": "6a1eb7ba-9206-4d9d-84f0-ff534c74434f",
+      "name": "AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1344,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f4cb8d7d-3050-429c-b22a-86380acd7750",
+      "name": "Google Gemini Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1216,
+        208
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Xo0DrhNZbqZIEcch",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "id": "7193a701-1280-41b5-8b8b-9bfe45e01242",
+      "name": "Simple Memory1",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        1360,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output.replace(/&/g, \"&amp;\").replace(/</g, \"&lt;\").replace(/>/g, \"&gt;\").replace(/\\*\\*(.+?)\\*\\*/g, \"<b>$1</b>\").replace(/^#{1,6}\\s*(.+)$/gm, \"<b>$1</b>\").replace(/^\\s*[*-]\\s+/gm, \"• \") }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "ce858291-943f-4d32-a544-ee72780691a5",
+      "name": "Send a text message1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1856,
+        144
+      ],
+      
+      "credentials": {
+        "telegramApi": {
+          "id": "QuN9SMFpOokUHNXN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "vaishnavichavan653@gmail.com",
+        "subject": "Telegram AI Assistant - Text Response",
+        "message": "=Hello,\n\nHere is the AI-generated response to your Telegram text message:\n\n{{ $json.output }}\n\nRegards,\nTelegram AI Assistant",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2336,
+        0
+      ],
+      "id": "8043bdf1-4e88-45de-9c21-507745f227ca",
+      "name": "Send a message",
+      
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CErt6Mfr9ZlXBcwi",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "vaishnavichavan653@gmail.com",
+        "subject": "Telegram AI Assistant - File Response",
+        "message": "=Hello,  Here is the AI-generated response after analyzing your uploaded file:  {{ $json.output }}  Regards, Telegram AI Assistant",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        144
+      ],
+      "id": "2495cbbd-4d82-4e63-8abe-3df91ead0ab0",
+      "name": "Send a message1",
+      
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CErt6Mfr9ZlXBcwi",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  
+  "meta": {
+    "templateCredsSetupCompleted": true
+    
+  },
+  "nodeGroups": [],
+  "id": "FaeFs63e5d5Ez654",
+  "tags": []
+}
